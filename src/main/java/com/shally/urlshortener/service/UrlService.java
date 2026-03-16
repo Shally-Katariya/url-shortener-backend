@@ -1,14 +1,18 @@
 package com.shally.urlshortener.service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.shally.urlshortener.dto.UrlStatsResponse;
 import com.shally.urlshortener.model.Url;
 import com.shally.urlshortener.repository.UrlRepository;
 import com.shally.urlshortener.utils.Base62Encoder;
+
 
 @Service
 public class UrlService {
@@ -19,47 +23,72 @@ public class UrlService {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
-    public String createShortUrl(String longUrl) {
+    @Autowired
+    private AnalyticsService analyticsService;
 
-        Url url = new Url();
-        url.setLongUrl(longUrl);
-        url.setCreatedAt(LocalDateTime.now());
+   public String createShortUrl(String longUrl) {
 
-        // Save first to generate ID
-        Url savedUrl = urlRepository.save(url);
+    Optional<Url> existing = urlRepository.findByLongUrl(longUrl);
 
-        // Convert ID → Base62
-        String shortCode = Base62Encoder.encode(savedUrl.getId());
-
-        savedUrl.setShortCode(shortCode);
-
-        urlRepository.save(savedUrl);
-
-        return shortCode;
+    if (existing.isPresent()) {
+        return existing.get().getShortCode();
     }
 
-    public String getLongUrl(String shortCode) {
+    Url url = new Url();
+    url.setLongUrl(longUrl);
+    url.setCreatedAt(LocalDateTime.now());
 
-        // 1️⃣ Check Redis cache
-        String cachedUrl = redisTemplate.opsForValue().get(shortCode);
+    Url savedUrl = urlRepository.save(url);
 
-        if (cachedUrl != null) {
-            return cachedUrl;
-        }
+    String shortCode = Base62Encoder.encode(savedUrl.getId());
 
-        // 2️⃣ Cache miss → query database
-        Url url = urlRepository.findByShortCode(shortCode)
-                .orElseThrow(() -> new RuntimeException("URL not found"));
+    savedUrl.setShortCode(shortCode);
 
-        String longUrl = url.getLongUrl();
+    urlRepository.save(savedUrl);
 
-        // 3️⃣ Store in Redis
-        redisTemplate.opsForValue().set(shortCode, longUrl, Duration.ofHours(1));
+    return shortCode;
+}
 
-        // 4️⃣ Update click analytics
-        url.setClickCount(url.getClickCount() + 1);
-        urlRepository.save(url);
+   
 
-        return longUrl;
+   public String getLongUrl(String shortCode) {
+
+    // 1️⃣ Check Redis cache
+    String cachedUrl = redisTemplate.opsForValue().get(shortCode);
+
+    if (cachedUrl != null) {
+
+        // increment Redis click counter
+        redisTemplate.opsForValue().increment("clicks:" + shortCode);
+
+        return cachedUrl;
     }
+
+    // 2️⃣ Cache miss → query DB
+    Url url = urlRepository.findByShortCode(shortCode)
+            .orElseThrow(() -> new RuntimeException("URL not found"));
+
+    String longUrl = url.getLongUrl();
+
+    // store URL in Redis cache
+    redisTemplate.opsForValue().set(shortCode, longUrl, Duration.ofHours(1));
+
+    // increment Redis click counter
+    redisTemplate.opsForValue().increment("clicks:" + shortCode);
+
+    return longUrl;
+}
+
+public UrlStatsResponse getUrlStats(String shortCode) {
+
+    Url url = urlRepository.findByShortCode(shortCode)
+            .orElseThrow(() -> new RuntimeException("URL not found"));
+
+    return new UrlStatsResponse(
+            url.getShortCode(),
+            url.getLongUrl(),
+            url.getClickCount(),
+            url.getCreatedAt()
+    );
+}
 }

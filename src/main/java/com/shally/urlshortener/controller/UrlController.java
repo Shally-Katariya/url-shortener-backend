@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.shally.urlshortener.dto.UrlStatsResponse;
+import com.shally.urlshortener.model.UrlRequest;
 import com.shally.urlshortener.service.UrlService;
 
 @RestController
@@ -23,17 +25,15 @@ public class UrlController {
     @Autowired
     private UrlService urlService;
 
-    @PostMapping("/urls")
-    public Map<String, String> createShortUrl(@RequestBody Map<String, String> request) {
+  @PostMapping("/urls")
+public Map<String, String> createShortUrl(@RequestBody UrlRequest request) {
 
-        String longUrl = request.get("longUrl");
+    String shortCode = urlService.createShortUrl(request.getLongUrl());
 
-        String shortCode = urlService.createShortUrl(longUrl);
-
-        return Map.of(
-                "shortUrl", "http://localhost:8080/" + shortCode
-        );
-    }
+    return Map.of(
+            "shortUrl", "http://localhost:8080/" + shortCode
+    );
+}
 
     @GetMapping("/{shortCode}")
     public ResponseEntity<?> redirect(@PathVariable String shortCode) {
@@ -45,4 +45,12 @@ public class UrlController {
                 .location(URI.create(longUrl))
                 .build();
     }
+
+    @GetMapping("/urls/{shortCode}/stats")
+    public ResponseEntity<?> getStats(@PathVariable String shortCode) {
+
+    UrlStatsResponse stats = urlService.getUrlStats(shortCode);
+
+    return ResponseEntity.ok(stats);
+}
 }

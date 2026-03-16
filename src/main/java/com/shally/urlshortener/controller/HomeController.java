@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.shally.urlshortener.model.UrlRequest;
-import com.shally.urlshortener.service.ShortUrlService;
+import com.shally.urlshortener.service.UrlService;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -18,7 +18,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class HomeController {
 
     @Autowired
-    private ShortUrlService shortUrlService;
+    private UrlService shortUrlService;
 
     @GetMapping("/")
     public String home() {
@@ -28,7 +28,7 @@ public class HomeController {
     @PostMapping("/shorten")
     public String shorten(@RequestBody UrlRequest request) {
 
-        String shortCode = shortUrlService.createShortUrl(request.getUrl());
+        String shortCode = shortUrlService.createShortUrl(request.getLongUrl());
 
         return "Short URL: http://localhost:8080/" + shortCode;
     }

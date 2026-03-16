@@ -2,13 +2,13 @@ package com.shally.urlshortener.model;
 
 public class UrlRequest {
 
-    private String url;
+    private String longUrl;
 
-    public String getUrl() {
-        return url;
+    public String getLongUrl() {
+        return longUrl;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setLongUrl(String longUrl) {
+        this.longUrl = longUrl;
     }
 }

@@ -12,6 +12,8 @@ import com.shally.urlshortener.dto.UrlStatsResponse;
 import com.shally.urlshortener.model.Url;
 import com.shally.urlshortener.repository.UrlRepository;
 import com.shally.urlshortener.utils.Base62Encoder;
+import com.shally.urlshortener.utils.SnowflakeGenerator;
+import java.net.URI;
 
 
 @Service
@@ -29,7 +31,15 @@ public class UrlService {
     @Autowired
     private KafkaProducerService kafkaProducerService;
 
-   public String createShortUrl(String longUrl) {
+    @Autowired
+    private SnowflakeGenerator snowflakeGenerator;
+
+  public String createShortUrl(String longUrl) {
+
+    // 🔒 VALIDATION (ADD THIS)
+    if (!isValidUrl(longUrl)) {
+        throw new IllegalArgumentException("Invalid or unsafe URL");
+    }
 
     Optional<Url> existing = urlRepository.findByLongUrl(longUrl);
 
@@ -37,17 +47,18 @@ public class UrlService {
         return existing.get().getShortCode();
     }
 
+    // 🔥 generate ID using Snowflake
+    long id = snowflakeGenerator.nextId();
+
+    String shortCode = Base62Encoder.encode(id);
+
     Url url = new Url();
     url.setLongUrl(longUrl);
+    url.setShortCode(shortCode);
     url.setCreatedAt(LocalDateTime.now());
+    url.setClickCount(0L);
 
-    Url savedUrl = urlRepository.save(url);
-
-    String shortCode = Base62Encoder.encode(savedUrl.getId());
-
-    savedUrl.setShortCode(shortCode);
-
-    urlRepository.save(savedUrl);
+    urlRepository.save(url);
 
     return shortCode;
 }
@@ -93,5 +104,18 @@ public UrlStatsResponse getUrlStats(String shortCode) {
             url.getClickCount(),
             url.getCreatedAt()
     );
+}
+
+private boolean isValidUrl(String url) {
+    try {
+        URI uri = new URI(url);
+
+        return uri.getScheme() != null &&
+               (uri.getScheme().equalsIgnoreCase("http") ||
+                uri.getScheme().equalsIgnoreCase("https"));
+
+    } catch (Exception e) {
+        return false;
+    }
 }
 }

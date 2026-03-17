@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.shally.urlshortener.dto.UrlStatsResponse;
 import com.shally.urlshortener.model.UrlRequest;
 import com.shally.urlshortener.service.UrlService;
 
@@ -39,5 +40,9 @@ public class HomeController {
         String longUrl = shortUrlService.getLongUrl(shortCode);
 
         response.sendRedirect(longUrl);
+}
+@GetMapping("/stats/{shortCode}")
+public UrlStatsResponse getStats(@PathVariable String shortCode) {
+    return shortUrlService.getUrlStats(shortCode);
 }
 }

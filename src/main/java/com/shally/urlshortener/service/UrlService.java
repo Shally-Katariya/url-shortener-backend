@@ -26,6 +26,9 @@ public class UrlService {
     @Autowired
     private AnalyticsService analyticsService;
 
+    @Autowired
+    private KafkaProducerService kafkaProducerService;
+
    public String createShortUrl(String longUrl) {
 
     Optional<Url> existing = urlRepository.findByLongUrl(longUrl);
@@ -58,8 +61,8 @@ public class UrlService {
 
     if (cachedUrl != null) {
 
-        // increment Redis click counter
-        redisTemplate.opsForValue().increment("clicks:" + shortCode);
+        
+       kafkaProducerService.sendClickEvent(shortCode);
 
         return cachedUrl;
     }
@@ -73,8 +76,8 @@ public class UrlService {
     // store URL in Redis cache
     redisTemplate.opsForValue().set(shortCode, longUrl, Duration.ofHours(1));
 
-    // increment Redis click counter
-    redisTemplate.opsForValue().increment("clicks:" + shortCode);
+    
+    kafkaProducerService.sendClickEvent(shortCode);
 
     return longUrl;
 }

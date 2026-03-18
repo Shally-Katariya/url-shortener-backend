@@ -32,10 +32,10 @@ public class HomeController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @GetMapping("/")
-    public String home() {
-        return "URL Shortener Backend is running 🚀";
-    }
+    //@GetMapping("/")
+    //public String home() {
+      //  return "URL Shortener Backend is running 🚀";
+    //}
 
     @PostMapping("/shorten")
 public String shorten(@RequestBody UrlRequest request,
@@ -58,7 +58,7 @@ public String shorten(@RequestBody UrlRequest request,
     return "Short URL: http://localhost:8080/" + shortCode;
 }
 
-    @GetMapping("/{shortCode}")
+    @GetMapping("/{shortCode:[a-zA-Z0-9]{5,15}}")
     public void redirect(@PathVariable String shortCode,
                          HttpServletResponse response,
                          HttpServletRequest request) throws IOException {

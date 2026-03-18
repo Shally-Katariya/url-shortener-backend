@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>URL Shortener 🚀</title>
+</head>
+<body>
+
+<h2>URL Shortener</h2>
+
+<input type="text" id="longUrl" placeholder="Enter URL" size="50"/>
+<button onclick="shorten()">Shorten</button>
+
+<p id="result"></p>
+
+<hr>
+
+<input type="text" id="code" placeholder="Enter short code"/>
+<button onclick="getStats()">Get Stats</button>
+
+<p id="stats"></p>
+
+<script>
+async function shorten() {
+    let url = document.getElementById("longUrl").value;
+
+    let res = await fetch("/api/urls", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ longUrl: url })
+    });
+
+    let data = await res.json();
+
+    document.getElementById("result").innerHTML =
+        `<a href="${data.shortUrl}" target="_blank">${data.shortUrl}</a>`;
+}
+
+async function getStats() {
+    let code = document.getElementById("code").value;
+
+    let res = await fetch(`/api/urls/${code}/stats`);
+    let data = await res.json();
+
+    document.getElementById("stats").innerHTML =
+        `Clicks: ${data.clickCount} <br> URL: ${data.longUrl}`;
+}
+</script>
+
+</body>
+</html>

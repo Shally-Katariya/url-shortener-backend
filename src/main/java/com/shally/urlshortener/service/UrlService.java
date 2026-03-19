@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.shally.urlshortener.dto.UrlStatsResponse;
 import com.shally.urlshortener.model.Url;
@@ -18,7 +19,8 @@ import java.net.URI;
 
 @Service
 public class UrlService {
-
+     @Value("${app.base-url}")
+    private String baseUrl;
     @Autowired
     private UrlRepository urlRepository;
 
@@ -44,8 +46,8 @@ public class UrlService {
     Optional<Url> existing = urlRepository.findByLongUrl(longUrl);
 
     if (existing.isPresent()) {
-        return existing.get().getShortCode();
-    }
+    return baseUrl + "/" + existing.get().getShortCode();
+}
 
     // 🔥 generate ID using Snowflake
     long id = snowflakeGenerator.nextId();
@@ -60,7 +62,7 @@ public class UrlService {
 
     urlRepository.save(url);
     kafkaProducerService.sendClickEvent("URL_CREATED: " + shortCode + " -> " + longUrl);
-    return shortCode;
+    return baseUrl + "/" + shortCode;
 }
 
    

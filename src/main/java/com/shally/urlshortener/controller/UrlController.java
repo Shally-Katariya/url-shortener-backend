@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.shally.urlshortener.dto.UrlStatsResponse;
 import com.shally.urlshortener.model.UrlRequest;
+import com.shally.urlshortener.service.RateLimiterService;
 import com.shally.urlshortener.service.UrlService;
 
 @RestController
@@ -24,6 +25,9 @@ public class UrlController {
 
     @Autowired
     private UrlService urlService;
+
+    @Autowired
+private RateLimiterService rateLimiterService;
 
   @PostMapping("/urls")
 public Map<String, String> createShortUrl(@RequestBody UrlRequest request) {
@@ -35,16 +39,23 @@ public Map<String, String> createShortUrl(@RequestBody UrlRequest request) {
     );
 }
 
-    @GetMapping("/{shortCode}")
-    public ResponseEntity<?> redirect(@PathVariable String shortCode) {
+   @GetMapping("/{shortCode}")
+public ResponseEntity<?> redirect(@PathVariable String shortCode) {
 
-        String longUrl = urlService.getLongUrl(shortCode);
-
+    // 🔥 RATE LIMIT CHECK
+    if (!rateLimiterService.isAllowed(shortCode)) {
         return ResponseEntity
-                .status(HttpStatus.FOUND)
-                .location(URI.create(longUrl))
-                .build();
+                .status(429)
+                .body("Too many requests 🚫");
     }
+
+    String longUrl = urlService.getLongUrl(shortCode);
+
+    return ResponseEntity
+            .status(HttpStatus.FOUND)
+            .location(URI.create(longUrl))
+            .build();
+}
 
     @GetMapping("/urls/{shortCode}/stats")
     public ResponseEntity<?> getStats(@PathVariable String shortCode) {

@@ -18,6 +18,8 @@ import com.shally.urlshortener.dto.UrlStatsResponse;
 import com.shally.urlshortener.model.UrlRequest;
 import com.shally.urlshortener.service.RateLimiterService;
 import com.shally.urlshortener.service.UrlService;
+import jakarta.servlet.http.HttpServletRequest;
+
 
 @RestController
 @RequestMapping("/api")
@@ -29,13 +31,16 @@ public class UrlController {
     @Autowired
 private RateLimiterService rateLimiterService;
 
-  @PostMapping("/urls")
-public Map<String, String> createShortUrl(@RequestBody UrlRequest request) {
+ @PostMapping("/urls")
+public Map<String, String> createShortUrl(@RequestBody UrlRequest request,
+                                          HttpServletRequest httpRequest) {
 
     String shortCode = urlService.createShortUrl(request.getLongUrl());
 
+    String baseUrl = httpRequest.getScheme() + "://" + httpRequest.getServerName();
+
     return Map.of(
-            "shortUrl", "http://localhost:8080/" + shortCode
+            "shortUrl", baseUrl + "/" + shortCode
     );
 }
 

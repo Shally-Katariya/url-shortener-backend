@@ -59,7 +59,7 @@ public class UrlService {
     url.setClickCount(0L);
 
     urlRepository.save(url);
-
+    kafkaProducerService.sendClickEvent("URL_CREATED: " + shortCode + " -> " + longUrl);
     return shortCode;
 }
 

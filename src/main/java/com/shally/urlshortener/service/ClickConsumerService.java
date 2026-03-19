@@ -11,14 +11,14 @@ import org.springframework.stereotype.Service;
 import com.shally.urlshortener.repository.UrlRepository;
 
 @Service
-public class KafkaConsumerService {
+public class ClickConsumerService {
 
     private Map<String, Long> clickBuffer = new HashMap<>();
 
     @Autowired
     private UrlRepository urlRepository;
 
-    @KafkaListener(topics = "click-events", groupId = "url-shortener-group")
+    @KafkaListener(topics = "url-events", groupId = "url-shortener-group")
     public void consume(String shortCode) {
 
         clickBuffer.put(shortCode,
@@ -27,7 +27,6 @@ public class KafkaConsumerService {
         System.out.println("Buffered click for: " + shortCode);
     }
 
-    // हर 10 sec me DB update
     @Scheduled(fixedRate = 10000)
     public void flushToDB() {
 

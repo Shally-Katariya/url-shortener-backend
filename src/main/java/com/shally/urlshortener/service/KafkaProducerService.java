@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class KafkaProducerService {
 
-    private static final String TOPIC = "click-events";
+    private static final String TOPIC = "url-events";
 
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;

@@ -19,8 +19,7 @@ import java.net.URI;
 
 @Service
 public class UrlService {
-     @Value("${app.base-url}")
-    private String baseUrl;
+   
     @Autowired
     private UrlRepository urlRepository;
 
@@ -30,8 +29,8 @@ public class UrlService {
     @Autowired
     private AnalyticsService analyticsService;
 
-    @Autowired
-    private KafkaProducerService kafkaProducerService;
+    @Autowired(required = false)
+private KafkaProducerService kafkaProducerService;
 
     @Autowired
     private SnowflakeGenerator snowflakeGenerator;
@@ -46,8 +45,9 @@ public class UrlService {
     Optional<Url> existing = urlRepository.findByLongUrl(longUrl);
 
     if (existing.isPresent()) {
-    return baseUrl + "/" + existing.get().getShortCode();
+    return existing.get().getShortCode(); 
 }
+
 
     // 🔥 generate ID using Snowflake
     long id = snowflakeGenerator.nextId();
@@ -61,7 +61,15 @@ public class UrlService {
     url.setClickCount(0L);
 
     urlRepository.save(url);
-    kafkaProducerService.sendClickEvent("URL_CREATED: " + shortCode + " -> " + longUrl);
+    try {
+    if (kafkaProducerService != null) {
+        new Thread(() -> {
+            try {
+                kafkaProducerService.sendClickEvent("URL_CREATED: " + shortCode + " -> " + longUrl);
+            } catch (Exception ignored) {}
+        }).start();
+    }
+} catch (Exception ignored) {}
     return shortCode;
 }
 
@@ -70,12 +78,26 @@ public class UrlService {
    public String getLongUrl(String shortCode) {
 
     // 1️⃣ Check Redis cache
-    String cachedUrl = redisTemplate.opsForValue().get(shortCode);
+    String cachedUrl = null;
+
+try {
+    cachedUrl = redisTemplate.opsForValue().get(shortCode);
+} catch (Exception e) {
+    System.out.println("Redis GET failed, fallback to DB");
+}
 
     if (cachedUrl != null) {
 
         
-       kafkaProducerService.sendClickEvent(shortCode);
+      try {
+    if (kafkaProducerService != null) {
+        new Thread(() -> {
+            try {
+                kafkaProducerService.sendClickEvent(shortCode);
+            } catch (Exception ignored) {}
+        }).start();
+    }
+} catch (Exception ignored) {}
 
         return cachedUrl;
     }
@@ -87,10 +109,22 @@ public class UrlService {
     String longUrl = url.getLongUrl();
 
     // store URL in Redis cache
+    try {
     redisTemplate.opsForValue().set(shortCode, longUrl, Duration.ofHours(1));
+} catch (Exception e) {
+    System.out.println("Redis SET failed, skipping cache");
+}
 
     
-    kafkaProducerService.sendClickEvent(shortCode);
+    try {
+    if (kafkaProducerService != null) {
+        new Thread(() -> {
+            try {
+                kafkaProducerService.sendClickEvent(shortCode);
+            } catch (Exception ignored) {}
+        }).start();
+    }
+} catch (Exception ignored) {}
 
     return longUrl;
 }

@@ -38,11 +38,6 @@ public class UrlController {
         );
     }
 
-    @GetMapping("/")
-    public String home() {
-    return "forward:/index.html";
-}
-
     // ✅ REDIRECT (PUBLIC URL)
     @GetMapping("/{shortCode}")
     public ResponseEntity<?> redirect(@PathVariable String shortCode) {

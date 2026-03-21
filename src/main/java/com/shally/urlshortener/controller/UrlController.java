@@ -69,4 +69,12 @@ public ResponseEntity<?> redirect(@PathVariable String shortCode) {
 
     return ResponseEntity.ok(stats);
 }
+@RestController
+public class HealthController {
+
+    @GetMapping("/health")
+    public String health() {
+        return "OK";
+    }
+}
 }

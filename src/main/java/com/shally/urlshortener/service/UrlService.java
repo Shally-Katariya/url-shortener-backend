@@ -3,6 +3,7 @@ package com.shally.urlshortener.service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.net.URI;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -13,8 +14,6 @@ import com.shally.urlshortener.model.Url;
 import com.shally.urlshortener.repository.UrlRepository;
 import com.shally.urlshortener.utils.Base62Encoder;
 import com.shally.urlshortener.utils.SnowflakeGenerator;
-
-import java.net.URI;
 
 @Service
 public class UrlService {
@@ -34,7 +33,6 @@ public class UrlService {
     // ✅ CREATE SHORT URL
     public String createShortUrl(String longUrl) {
 
-        // 🔒 VALIDATION
         if (!isValidUrl(longUrl)) {
             throw new IllegalArgumentException("Invalid or unsafe URL");
         }
@@ -44,7 +42,6 @@ public class UrlService {
             return existing.get().getShortCode();
         }
 
-        // 🔥 Generate unique ID
         long id = snowflakeGenerator.nextId();
         String shortCode = Base62Encoder.encode(id);
 
@@ -56,7 +53,7 @@ public class UrlService {
 
         urlRepository.save(url);
 
-        // Optional Kafka event
+        // Kafka event (optional)
         try {
             if (kafkaProducerService != null) {
                 kafkaProducerService.sendClickEvent("URL_CREATED: " + shortCode);
@@ -66,47 +63,48 @@ public class UrlService {
         return shortCode;
     }
 
-    // ✅ GET LONG URL (REDIRECT FLOW)
+    // ✅ GET LONG URL (OPTIMIZED)
     public String getLongUrl(String shortCode) {
 
         String cachedUrl = null;
 
-        // 1️⃣ Try Redis
+        // 1️⃣ Check Redis
         try {
             cachedUrl = redisTemplate.opsForValue().get(shortCode);
         } catch (Exception e) {
-            System.out.println("Redis GET failed, fallback to DB");
+            System.out.println("Redis GET failed");
         }
 
+        // ✅ CACHE HIT (NO DB CALL AT ALL)
         if (cachedUrl != null) {
             System.out.println("🔥 CACHE HIT");
 
-            // ✅ Increment click count
-            incrementClick(shortCode);
+            // Only send Kafka event (async analytics)
+            try {
+                if (kafkaProducerService != null) {
+                    kafkaProducerService.sendClickEvent(shortCode);
+                }
+            } catch (Exception ignored) {}
 
-            return cachedUrl;
+            return cachedUrl; // 🚀 immediate return
         }
 
+        // ❌ CACHE MISS → DB CALL
         System.out.println("❌ CACHE MISS");
 
-        // 2️⃣ Fetch from DB
         Url url = urlRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new RuntimeException("URL not found"));
 
         String longUrl = url.getLongUrl();
 
-        // ✅ Increment click count
-        url.setClickCount(url.getClickCount() + 1);
-        urlRepository.save(url);
-
-        // 3️⃣ Store in Redis
+        // 2️⃣ Store in Redis
         try {
             redisTemplate.opsForValue().set(shortCode, longUrl, Duration.ofHours(1));
         } catch (Exception e) {
-            System.out.println("Redis SET failed, skipping cache");
+            System.out.println("Redis SET failed");
         }
 
-        // Optional Kafka event
+        // 3️⃣ Send Kafka event
         try {
             if (kafkaProducerService != null) {
                 kafkaProducerService.sendClickEvent(shortCode);
@@ -128,19 +126,6 @@ public class UrlService {
                 url.getClickCount(),
                 url.getCreatedAt()
         );
-    }
-
-    // ✅ CLICK INCREMENT HELPER
-    private void incrementClick(String shortCode) {
-        try {
-            Url url = urlRepository.findByShortCode(shortCode)
-                    .orElseThrow(() -> new RuntimeException("URL not found"));
-
-            url.setClickCount(url.getClickCount() + 1);
-            urlRepository.save(url);
-        } catch (Exception e) {
-            System.out.println("Click update failed");
-        }
     }
 
     // ✅ URL VALIDATION

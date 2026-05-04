@@ -1,7 +1,7 @@
 package com.shally.urlshortener.service;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -13,7 +13,8 @@ import com.shally.urlshortener.repository.UrlRepository;
 @Service
 public class ClickConsumerService {
 
-    private Map<String, Long> clickBuffer = new HashMap<>();
+    // ✅ Thread-safe map
+    private final Map<String, Long> clickBuffer = new ConcurrentHashMap<>();
 
     @Autowired
     private UrlRepository urlRepository;
@@ -21,14 +22,18 @@ public class ClickConsumerService {
     @KafkaListener(topics = "url-events", groupId = "url-shortener-group")
     public void consume(String shortCode) {
 
-        clickBuffer.put(shortCode,
-                clickBuffer.getOrDefault(shortCode, 0L) + 1);
+        clickBuffer.merge(shortCode, 1L, Long::sum);
 
         System.out.println("Buffered click for: " + shortCode);
     }
 
     @Scheduled(fixedRate = 10000)
     public void flushToDB() {
+
+        // ✅ Avoid unnecessary DB calls
+        if (clickBuffer.isEmpty()) {
+            return;
+        }
 
         System.out.println("Flushing to DB: " + clickBuffer);
 

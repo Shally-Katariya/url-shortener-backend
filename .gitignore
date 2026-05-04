@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+kafka_2.13-3.6.1/
+*.tgz
+*.jar

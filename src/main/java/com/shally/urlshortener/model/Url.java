@@ -2,31 +2,35 @@ package com.shally.urlshortener.model;
 
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
-@Table(name = "urls")
+@Table(
+    name = "urls",
+    indexes = {
+        @Index(name = "idx_short_code", columnList = "short_code")
+    }
+)
 public class Url {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-   @Column(unique = true)
-   private String shortCode;
+    // ✅ indexed + unique + not null
+    @Column(name = "short_code", unique = true, nullable = false)
+    private String shortCode;
 
-   @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(name = "long_url", nullable = false, columnDefinition = "TEXT")
     private String longUrl;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "click_count")
     private Long clickCount = 0L;
+
+    // GETTERS & SETTERS
 
     public Long getId() {
         return id;
@@ -56,11 +60,11 @@ public class Url {
         this.createdAt = createdAt;
     }
 
-    public long getClickCount() {
-    return clickCount;
+    public Long getClickCount() {
+        return clickCount;
     }
 
-     public void setClickCount(long clickCount) {
-    this.clickCount = clickCount;
+    public void setClickCount(Long clickCount) {
+        this.clickCount = clickCount;
     }
-    }
+}

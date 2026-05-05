@@ -45,10 +45,10 @@ public class UrlController {
 
         // 🔥 RATE LIMIT CHECK
         if (!rateLimiterService.isAllowed(shortCode)) {
-            return ResponseEntity
-                    .status(429)
-                    .body("Too many requests 🚫");
-        }
+                   return ResponseEntity
+                   .status(429)
+                   .body("Too many requests 🚫");
+       }
 
         String longUrl = urlService.getLongUrl(shortCode);
 

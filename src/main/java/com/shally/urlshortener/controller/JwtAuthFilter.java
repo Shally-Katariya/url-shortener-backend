@@ -20,19 +20,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                   HttpServletResponse response,
-                                   FilterChain filterChain)
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
             throws ServletException, IOException {
 
-        String path = request.getServletPath();
+        String path = request.getRequestURI();
 
-        // ✅ PUBLIC ROUTES (NO AUTH REQUIRED)
+        // 🔓 PUBLIC ROUTES (NO AUTH REQUIRED)
         if (
             path.equals("/") ||
             path.equals("/index.html") ||
-            path.startsWith("/api/urls") ||   // shorten + stats
-            path.startsWith("/api/auth") ||   // login
-            !path.startsWith("/api")          // 🔥 THIS FIXES REDIRECT
+            path.startsWith("/api/auth") ||
+            path.startsWith("/api/urls") ||
+            !path.startsWith("/api")          // covers /abc123 redirects
         ) {
             filterChain.doFilter(request, response);
             return;
@@ -49,7 +49,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         try {
-            jwtUtil.extractUsername(token); // validate token
+            jwtUtil.extractUsername(token);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;

@@ -66,4 +66,8 @@ public class UrlController {
 
         return ResponseEntity.ok(stats);
     }
+    @GetMapping("/api/protected")
+public String protectedRoute() {
+    return "You accessed a protected route!";
+}
 }

@@ -1,4 +1,4 @@
-package com.shally.urlshortener.config;  // fix package too
+package com.shally.urlshortener.config;
 
 import org.springframework.context.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,23 +12,25 @@ import com.shally.urlshortener.controller.JwtAuthFilter;
 @EnableWebSecurity
 public class SecurityConfig {
 
-   // @Autowired
-    //private JwtAuthFilter jwtAuthFilter;
+    @Autowired
+    private JwtAuthFilter jwtAuthFilter;
 
-   @Bean
-public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    http
-        .csrf(csrf -> csrf.disable())
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers(
-                "/", 
-                "/index.html",
-                "/api/urls/**",
-                "/**"   // 🔥 THIS LINE FIXES REDIRECT
-            ).permitAll()
-            .anyRequest().permitAll()
-        );
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                    "/",
+                    "/index.html",
+                    "/api/urls/**",
+                    "/api/auth/**",
+                    "/{shortCode:[a-zA-Z0-9]+}"
+                ).permitAll()
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-    return http.build();
-}
+        return http.build();
+    }
 }

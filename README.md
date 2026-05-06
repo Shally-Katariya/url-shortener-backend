@@ -45,9 +45,9 @@ Built to simulate real-world distributed system challenges: cache consistency, a
 │                     SPRING BOOT BACKEND                             │
 │                                                                     │
 │   ┌──────────────┐   ┌──────────────┐   ┌──────────────────────┐    │
-│   │ RateLimitFilter│  │ JwtAuthFilter│   │  GlobalException    │    │
-│   │ (IP-based,   │  │ (Bearer token│   │  Handler              │    │
-│   │  100 req/min)│  │  validation) │   │                       │    │
+│   │RateLimitFilter   │ JwtAuthFilter│   │  GlobalException     │    │
+│   │ (IP-based,   │   │ (Bearer token│   │  Handler             │    │
+│   │  100 req/min)│   │  validation) │   │                      │    │
 │   └──────┬───────┘   └──────┬───────┘   └──────────────────────┘    │
 │          │                  │                                       │
 │          ▼                  ▼                                       │
@@ -332,10 +332,19 @@ The Kafka listener thread writes to the buffer; the `@Scheduled` flush thread re
 
 ## Screenshots
 
-> *[Load test terminal output — k6 results]*  
-> *[Application UI — URL shortening dashboard]*  
-> *[Analytics dashboard — click stats]*  
-> *[Docker Compose — all services running]*
+## 📸 Load Test Evidence
+
+### Baseline — 50 VUs | 368 req/s | avg 30ms latency
+![50 VUs](test-results/k6-50vus.png)
+
+### Mid Load — 500 VUs | 960 req/s | 0% failure
+![500 VUs](test-results/k6-500vus.png)
+
+### Peak Throughput — 700 VUs | 1,039 req/s | 0% failure  
+![700 VUs](test-results/k6-700vus.png)
+
+### Stress Ceiling — 900 VUs | 942 req/s | 0% failure
+![900 VUs](test-results/k6-900vus.png)
 
 ---
 

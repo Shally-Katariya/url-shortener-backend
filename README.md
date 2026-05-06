@@ -256,7 +256,7 @@ Concurrent Users    Throughput       Avg Latency    Status
 
 ```bash
 # Clone the repo
-git clone https://github.com/shally-katariya/url-shortener.git
+git clone https://github.com/shally-katariya/url-shortener-backend.git
 cd url-shortener
 
 # Start all infrastructure (Postgres, Redis, Zookeeper, Kafka)
@@ -351,7 +351,7 @@ The Kafka listener thread writes to the buffer; the `@Scheduled` flush thread re
 ## Author
 
 **Shally Katariya**  
-[GitHub](https://github.com/shally-katariya) • [LinkedIn](https://linkedin.com/in/shally-katariya)
+[GitHub](https://github.com/shally-katariya) • [LinkedIn](https://www.linkedin.com/in/shally-katariya-158323297/)
 
 ---
 
